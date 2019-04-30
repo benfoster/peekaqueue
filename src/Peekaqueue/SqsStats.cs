@@ -36,7 +36,11 @@ namespace Peekaqueue
             EcsService = ecsService;
             EcsServiceRunningCount = ecsServiceRunningCount;
             EcsServiceDesiredCount = ecsServiceDesiredCount;
-            EcsServicePendingCount = ecsServicePendingCount;   
+            EcsServicePendingCount = ecsServicePendingCount;
+
+            EcsServiceBacklogCount = EcsServiceRunningCount > 0 
+                ? (double)AvailableMessagesCount / EcsServiceRunningCount
+                : AvailableMessagesCount;
 
             return this;
         }
@@ -47,7 +51,6 @@ namespace Peekaqueue
         public int EcsServiceRunningCount { get; private set; }
         public int EcsServiceDesiredCount { get; private set; }
         public int EcsServicePendingCount { get; private set; }
-
-        public double EcsServiceBacklogCount => (double)AvailableMessagesCount / EcsServiceRunningCount;
+        public double EcsServiceBacklogCount { get; private set; }
     }
 }
