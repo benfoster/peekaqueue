@@ -23,7 +23,7 @@ namespace Peekaqueue
         {
             QueueAttributeName.ApproximateNumberOfMessages,
             QueueAttributeName.ApproximateNumberOfMessagesDelayed,
-            QueueAttributeName.ApproximateNumberOfMessagesNotVisible,
+            QueueAttributeName.ApproximateNumberOfMessagesNotVisible
         };
 
         private readonly ILogger _logger;
