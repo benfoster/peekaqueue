@@ -1,3 +1,7 @@
+![GitHub release](https://img.shields.io/github/release/benfoster/peekaqueue.svg)
+![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/benfoster/peekaqueue.svg)
+![Docker Pulls](https://img.shields.io/docker/pulls/benfoster/peekaqueue.svg) 
+
 # peekaqueue
 
 Peekaqueue provides a drop-in docker container for monitoring SQS queues and enabling queue-based auto-scaling of ECS services.
