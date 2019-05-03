@@ -7,6 +7,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6085D772-B4D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peekaqueue", "src\Peekaqueue\Peekaqueue.csproj", "{64DFF1E6-9FE2-4908-A0FD-8D39CE5895A5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loadaqueue", "src\Loadaqueue\Loadaqueue.csproj", "{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,8 +34,21 @@ Global
 		{64DFF1E6-9FE2-4908-A0FD-8D39CE5895A5}.Release|x64.Build.0 = Release|Any CPU
 		{64DFF1E6-9FE2-4908-A0FD-8D39CE5895A5}.Release|x86.ActiveCfg = Release|Any CPU
 		{64DFF1E6-9FE2-4908-A0FD-8D39CE5895A5}.Release|x86.Build.0 = Release|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Debug|x64.Build.0 = Debug|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Debug|x86.Build.0 = Debug|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Release|x64.ActiveCfg = Release|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Release|x64.Build.0 = Release|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Release|x86.ActiveCfg = Release|Any CPU
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{64DFF1E6-9FE2-4908-A0FD-8D39CE5895A5} = {6085D772-B4DD-45B9-922D-D10D974DF626}
+		{19ABF2F4-7B83-4EAE-85AD-5E2AD8EC951D} = {6085D772-B4DD-45B9-922D-D10D974DF626}
 	EndGlobalSection
 EndGlobal
