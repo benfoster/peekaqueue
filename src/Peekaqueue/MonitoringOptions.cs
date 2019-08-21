@@ -30,7 +30,7 @@ namespace Peekaqueue
         public int IntervalInSeconds { get; set; }
 
         /// <summary>
-        /// 
+        /// The list of queues
         /// </summary>
         public IEnumerable<QueueConfiguration> Queues { get; set; }
 
