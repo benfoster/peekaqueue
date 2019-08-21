@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using SerilogTimings.Extensions;
 using Task = System.Threading.Tasks.Task;
+using Polly;
 
 namespace Peekaqueue
 {
@@ -31,6 +32,7 @@ namespace Peekaqueue
         private readonly IAmazonECS _ecsClient;
         private readonly MonitoringOptions _monitoringOptions;
         private readonly IMediator _mediator;
+        private readonly Policy _retryPolicy;
 
         public SqsStatsService(
             ILogger logger,
@@ -44,28 +46,48 @@ namespace Peekaqueue
             _sqsClient = sqsClient ?? throw new ArgumentNullException(nameof(sqsClient));
             _ecsClient = ecsClient ?? throw new ArgumentNullException(nameof(ecsClient));
             _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+
+            _retryPolicy = Policy.Handle<Exception>()
+               .WaitAndRetryAsync(_monitoringOptions.SqsConnectionRetryCount,
+                attempts => TimeSpan.FromSeconds(attempts * _monitoringOptions.SqsConnectionRetryBackoffMultiplier), OnRetryAsync);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             try
             {
-                var queues = await GetQueuesToMonitor();
+                var queues = new Dictionary<QueueConfiguration, string>();
+                var policyResult = await _retryPolicy.ExecuteAndCaptureAsync(async () =>
+                {
+                    queues = await GetQueuesToMonitor();
+                });
 
-                if (queues.Count == 0)
+                Exception exception = policyResult.FinalException;
+                if (exception != null)
+                {
+                    throw new UnableToConnectToSqsException(exception);
+                }
+
+                if (queues.Count > 0)
+                {
+                    while (!stoppingToken.IsCancellationRequested)
+                    {
+                        await GetStatsAsync(queues, stoppingToken);
+                        await Task.Delay(TimeSpan.FromSeconds(_monitoringOptions.IntervalInSeconds), stoppingToken);
+                    }
+                }
+                else
                 {
                     _logger.Warning("No queues are available for monitoring");
-                    // TODO stop app
-                }
-
-                while (!stoppingToken.IsCancellationRequested)
-                {
-                    await GetStatsAsync(queues, stoppingToken);
-                    await Task.Delay(TimeSpan.FromSeconds(_monitoringOptions.IntervalInSeconds), stoppingToken);
                 }
             }
-            catch (OperationCanceledException)
+            catch (UnableToConnectToSqsException ex)
             {
+                _logger.Error(ex, ex.Message);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Error(ex, ex.Message);
             }
         }
 
@@ -77,17 +99,10 @@ namespace Peekaqueue
             {
                 using (_logger.TimeOperation("Getting SQS queue URL for {QueueName}", queueConfiguration.Name))
                 {
-                    try
+                    GetQueueUrlResponse queueUrlResponse = await _sqsClient.GetQueueUrlAsync(queueConfiguration.Name);
+                    if (queueUrlResponse.HttpStatusCode == HttpStatusCode.OK)
                     {
-                        GetQueueUrlResponse queueUrlResponse = await _sqsClient.GetQueueUrlAsync(queueConfiguration.Name);
-                        if (queueUrlResponse.HttpStatusCode == HttpStatusCode.OK)
-                        {
-                            queues.Add(queueConfiguration, queueUrlResponse.QueueUrl);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(ex, "Unable to get queue URL for {QueueName}", queueConfiguration.Name);
+                        queues.Add(queueConfiguration, queueUrlResponse.QueueUrl);
                     }
                 }
             }
@@ -171,6 +186,12 @@ namespace Peekaqueue
                 _logger.Error(ex, "Erorr getting ECS service details for {Cluster}:{Service}", cluster, service);
                 return null;
             }
+        }
+
+        private Task OnRetryAsync(Exception ex, TimeSpan delay, int attempts, Context context)
+        {
+            _logger.Warning("Failed to connect to SQS queue. Attempt {Attempt}/{Max}", attempts, _monitoringOptions.SqsConnectionRetryCount);
+            return Task.CompletedTask;
         }
     }
 }
