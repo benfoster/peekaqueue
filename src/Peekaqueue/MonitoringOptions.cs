@@ -10,7 +10,7 @@ namespace Peekaqueue
             MetricsEndpointPort = 5000;
             MetricsEndpointPath = "metrics/";
             CloudWatchNamespace = "Custom";
-            SqsConnectionRetryCount = 10;
+            SqsConnectionRetryCount = 5;
             SqsConnectionRetryBackoffMultiplier = 3;
         }
 
