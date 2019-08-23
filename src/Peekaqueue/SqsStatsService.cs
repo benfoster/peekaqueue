@@ -102,7 +102,7 @@ namespace Peekaqueue
                     }
                     catch (Exception ex)
                     {
-                        _logger.Error(ex, ex.Message);
+                        _logger.Error(ex, "Unable to get queue URL for {QueueName}", queueConfiguration.Name);
                     }
                 }
             }
