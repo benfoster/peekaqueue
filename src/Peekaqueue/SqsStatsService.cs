@@ -61,19 +61,17 @@ namespace Peekaqueue
             {
                 var queues = await GetQueuesToMonitor();
 
-                if (queues.Count > 0)
-                {
-                    while (!stoppingToken.IsCancellationRequested)
-                    {
-                        await GetStatsAsync(queues, stoppingToken);
-                        await Task.Delay(TimeSpan.FromSeconds(_monitoringOptions.IntervalInSeconds), stoppingToken);
-                    }
-                }
-                else
+                if (queues.Count == 0)
                 {
                     _logger.Warning("No queues are available for monitoring");
                     _logger.Warning("Application is terminating");
                     _applicationLifetime.StopApplication();
+                }
+
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    await GetStatsAsync(queues, stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(_monitoringOptions.IntervalInSeconds), stoppingToken);
                 }
             }
             catch (OperationCanceledException ex)
