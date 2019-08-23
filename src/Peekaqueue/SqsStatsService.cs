@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using SerilogTimings.Extensions;
 using Task = System.Threading.Tasks.Task;
+using Polly;
 
 namespace Peekaqueue
 {
@@ -31,19 +32,27 @@ namespace Peekaqueue
         private readonly IAmazonECS _ecsClient;
         private readonly MonitoringOptions _monitoringOptions;
         private readonly IMediator _mediator;
+        private readonly Policy _retryPolicy;
+        private readonly IApplicationLifetime _applicationLifetime;
 
         public SqsStatsService(
             ILogger logger,
             IOptions<MonitoringOptions> monitoringOptions,
             IAmazonSQS sqsClient,
             IAmazonECS ecsClient,
-            IMediator mediator)
+            IMediator mediator, 
+            IApplicationLifetime applicationLifetime)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _monitoringOptions = monitoringOptions.Value ?? throw new ArgumentNullException(nameof(monitoringOptions));
             _sqsClient = sqsClient ?? throw new ArgumentNullException(nameof(sqsClient));
             _ecsClient = ecsClient ?? throw new ArgumentNullException(nameof(ecsClient));
             _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+            _applicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
+
+            _retryPolicy = Policy.Handle<Exception>()
+               .WaitAndRetryAsync(_monitoringOptions.SqsConnectionRetryCount,
+                attempts => TimeSpan.FromSeconds(attempts * _monitoringOptions.SqsConnectionRetryBackoffMultiplier), OnRetryAsync);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -55,7 +64,8 @@ namespace Peekaqueue
                 if (queues.Count == 0)
                 {
                     _logger.Warning("No queues are available for monitoring");
-                    // TODO stop app
+                    _logger.Warning("Application is terminating");
+                    _applicationLifetime.StopApplication();
                 }
 
                 while (!stoppingToken.IsCancellationRequested)
@@ -64,8 +74,9 @@ namespace Peekaqueue
                     await Task.Delay(TimeSpan.FromSeconds(_monitoringOptions.IntervalInSeconds), stoppingToken);
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
+                _logger.Error(ex, ex.Message);
             }
         }
 
@@ -79,7 +90,9 @@ namespace Peekaqueue
                 {
                     try
                     {
-                        GetQueueUrlResponse queueUrlResponse = await _sqsClient.GetQueueUrlAsync(queueConfiguration.Name);
+                        GetQueueUrlResponse queueUrlResponse = await _retryPolicy.ExecuteAsync(_ =>
+                            _sqsClient.GetQueueUrlAsync(queueConfiguration.Name), CreateRetryPolicyContext(queueConfiguration.Name));
+
                         if (queueUrlResponse.HttpStatusCode == HttpStatusCode.OK)
                         {
                             queues.Add(queueConfiguration, queueUrlResponse.QueueUrl);
@@ -143,7 +156,7 @@ namespace Peekaqueue
             {
                 using (_logger.TimeOperation("Getting SQS queue attributes for {QueueName}", queueName))
                 {
-                    return await _sqsClient.GetQueueAttributesAsync(queueUrl, QueueAttributes, stoppingToken);
+                    return await _retryPolicy.ExecuteAsync(_ => _sqsClient.GetQueueAttributesAsync(queueUrl, QueueAttributes, stoppingToken), CreateRetryPolicyContext(queueName));
                 }
             }
             catch (Exception ex)
@@ -171,6 +184,19 @@ namespace Peekaqueue
                 _logger.Error(ex, "Erorr getting ECS service details for {Cluster}:{Service}", cluster, service);
                 return null;
             }
+        }
+
+        private Task OnRetryAsync(Exception ex, TimeSpan delay, int attempts, Context context)
+        {
+            _logger.Warning("Failed to connect to SQS queue {Queue}. Attempt {Attempt}/{Max}", context["Queue"], attempts, _monitoringOptions.SqsConnectionRetryCount);
+            return Task.CompletedTask;
+        }
+
+        private static Context CreateRetryPolicyContext(string queueName)
+        {
+            var policyContext = new Context();
+            policyContext.Add("Queue", queueName);
+            return policyContext;
         }
     }
 }
