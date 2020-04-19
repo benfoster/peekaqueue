@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:2.2-sdk-alpine AS build
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1-alpine AS build
 
 ARG BUILDCONFIG=RELEASE
 ARG VERSION=1.0.0
@@ -13,7 +13,7 @@ COPY ./ ./
 RUN dotnet publish -c $BUILDCONFIG -o out /p:Version=$VERSION
 
 # build runtime image
-FROM microsoft/dotnet:2.2-aspnetcore-runtime-alpine
+FROM mcr.microsoft.com/dotnet/core/runtime:3.1-alpine
 WORKDIR /app
 COPY --from=build /build/out ./
 
