@@ -123,4 +123,4 @@ docker run --rm -it \
 
 ## Developing peekaqueue
 
-Peekqueue is a .NET Core 2.2 application. You can download the .NET Core runtime and tools [here](http://dot.net).
+Peekqueue is a .NET Core 3.1 application. You can download the .NET Core runtime and tools [here](http://dot.net).
