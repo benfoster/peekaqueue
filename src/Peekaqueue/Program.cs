@@ -33,7 +33,7 @@ namespace Peekaqueue
             services.AddMediatR();
             services.AddSingleton(Log.Logger);
             services.AddDefaultAWSOptions(context.Configuration.GetAWSOptions());
-            services.AddAWSService<IAmazonSQS>();
+            services.AddAWSServiceWithOverride<IAmazonSQS>(context.Configuration, "AWS:Sqs");
             services.AddAWSService<IAmazonECS>();
             services.AddAWSService<IAmazonCloudWatch>();
 
